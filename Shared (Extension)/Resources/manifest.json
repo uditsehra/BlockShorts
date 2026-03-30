@@ -5,7 +5,12 @@
     "name": "Block Shorts",
     "version": "1.0",
     "description": "Safari Extension to block annoying and distracting youtube shorts.",
-    "permissions": ["activeTab", "scripting"],
+    "permissions": [
+        "activeTab",
+        "scripting",
+        "storage",
+        "tabs"
+    ],
     "host_permissions": ["*://www.youtube.com/*"],
     "content_scripts":[
         {
