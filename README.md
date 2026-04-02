@@ -2,7 +2,7 @@
 
 ## 🚀 How It Works
 
-The extension:
+The extension: BlockShorts
 
 1. Injects scripts into YouTube pages
 2. Detects Shorts-related elements
