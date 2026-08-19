@@ -117,6 +117,7 @@
 				Resources/popup.css,
 				Resources/popup.html,
 				Resources/popup.js,
+				Resources/rules.json,
 				SafariWebExtensionHandler.swift,
 			);
 			target = 0A59A3A72F7B143A00F589CB /* BlockShorts Extension (iOS) */;
@@ -132,6 +133,7 @@
 				Resources/popup.css,
 				Resources/popup.html,
 				Resources/popup.js,
+				Resources/rules.json,
 				SafariWebExtensionHandler.swift,
 			);
 			target = 0A59A3B12F7B143A00F589CB /* BlockShorts Extension (macOS) */;
