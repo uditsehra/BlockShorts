@@ -1,9 +1,10 @@
 {
     "manifest_version": 3,
-    "name": "Block Shorts",
-    "version": "1.0",
-    "description": "Safari Extension to Youtube Block Shorts",
-    "permissions": ["storage"],
+    "name": "__MSG_extension_name__",
+    "version": "1.1",
+    "description": "__MSG_extension_description__",
+    "default_locale": "en",
+    "permissions": ["storage", "declarativeNetRequest", "activeTab"],
     "host_permissions": ["*://*.youtube.com/*"],
     "content_scripts": [{
         "matches": ["*://*.youtube.com/*"],
@@ -13,5 +14,12 @@
     "background": { "service_worker": "background.js" },
     "action": {
         "default_popup": "popup.html"
+    },
+    "declarative_net_request": {
+        "rule_resources": [{
+            "id": "ruleset_redirect",
+            "enabled": true,
+            "path": "rules.json"
+        }]
     }
 }
