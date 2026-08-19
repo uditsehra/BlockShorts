@@ -1,0 +1,17 @@
+{
+  "name": "blockshorts-extension",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "jest",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "@playwright/test": "^1.40.0"
+  },
+  "jest": {
+    "testMatch": ["**/Tests/Unit/**/*.test.js"],
+    "testEnvironment": "node"
+  }
+}

@@ -4,11 +4,15 @@ const api = typeof browser !== "undefined" ? browser : chrome;
 const style = document.createElement("style");
 style.id = "no-shorts-stable-style";
 style.textContent = `
-    ytd-reel-shelf-renderer, 
-    grid-shelf-view-model, 
+    ytd-reel-shelf-renderer,
+    grid-shelf-view-model,
     ytm-shorts-lockup-view-model,
-    a[href*="/shorts/"] { 
-        display: none !important; 
+    ytd-shorts,
+    ytd-reel-video-renderer,
+    ytd-shorts-lockup-view-model,
+    a[href*="/shorts/"],
+    a[href="/shorts"] {
+        display: none !important;
     }
 `;
 
@@ -23,15 +27,18 @@ api.storage.local.get("blockShortsEnabled", (res) => {
     }
 });
 
-// 3. REDIRECT (The only JS that runs)
+// 3. REDIRECT for SPA navigations (initial hard-navigations handled by declarativeNetRequest)
 function checkRedirect() {
-    if (window.location.pathname.startsWith("/shorts/")) {
-        const id = window.location.pathname.split("/")[2];
-        window.location.replace(id ? `/watch?v=${id}` : 'https://www.youtube.com/');
+    const path = window.location.pathname;
+    if (path.startsWith("/shorts")) {
+        const id = path.split("/")[2];
+        window.location.replace(id ? `/watch?v=${id}` : "https://www.youtube.com/");
     }
 }
-checkRedirect();
+// yt-navigate-start fires after YouTube calls history.pushState, so location is already updated
 window.addEventListener("yt-navigate-start", checkRedirect);
+// yt-navigate-finish is a safety net for navigations that bypass yt-navigate-start
+window.addEventListener("yt-navigate-finish", checkRedirect);
 
 // 4. HEARTBEAT (For stats)
 setInterval(() => {

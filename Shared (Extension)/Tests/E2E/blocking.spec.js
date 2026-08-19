@@ -5,30 +5,41 @@
 //  Created by Udit Sehra on 02/04/26.
 //
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('./fixtures');
 
-test('Shorts shelf should be hidden on YouTube search', async ({ page }) => {
-    // 1. Go to YouTube search
+test('Shorts shelf is hidden on YouTube search results', async ({ page }) => {
     await page.goto('https://www.youtube.com/results?search_query=mrbeast');
+    // Wait for search results to render before asserting
+    await page.waitForSelector('ytd-search', { timeout: 10000 });
 
-    // 2. Wait for content to load
-    await page.waitForTimeout(2000);
-
-    // 3. Check if the shelf exists but is hidden
     const shelf = page.locator('ytd-reel-shelf-renderer');
-    
-    // It should either be removed from DOM or have display: none
-    const isVisible = await shelf.isVisible();
-    expect(isVisible).toBe(false);
+    expect(await shelf.isVisible()).toBe(false);
 });
 
-test('Should redirect /shorts/ URL to /watch?v=', async ({ page }) => {
-    // 1. Try to visit a direct Shorts link
+test('Direct /shorts/id URL redirects to /watch?v=id', async ({ page }) => {
     await page.goto('https://www.youtube.com/shorts/dQw4w9WgXcQ');
-
-    // 2. Wait for redirect
-    await page.waitForURL(/.*watch\?v=.*/);
-
-    // 3. Confirm URL structure
+    await page.waitForURL(/watch\?v=dQw4w9WgXcQ/, { timeout: 10000 });
     expect(page.url()).toContain('watch?v=dQw4w9WgXcQ');
+});
+
+test('Bare /shorts URL redirects to YouTube homepage', async ({ page }) => {
+    await page.goto('https://www.youtube.com/shorts');
+    await page.waitForURL('https://www.youtube.com/', { timeout: 10000 });
+    expect(page.url()).toBe('https://www.youtube.com/');
+});
+
+test('Shorts feed page content is hidden after SPA navigation', async ({ page }) => {
+    await page.goto('https://www.youtube.com/');
+    await page.waitForSelector('ytd-app', { timeout: 10000 });
+
+    // Simulate clicking the Shorts sidebar link via SPA navigation
+    await page.evaluate(() => {
+        window.dispatchEvent(new CustomEvent('yt-navigate-start'));
+        history.pushState({}, '', '/shorts');
+        window.dispatchEvent(new CustomEvent('yt-navigate-start'));
+    });
+
+    // After redirect, should be back on homepage
+    await page.waitForURL('https://www.youtube.com/', { timeout: 5000 });
+    expect(page.url()).toBe('https://www.youtube.com/');
 });

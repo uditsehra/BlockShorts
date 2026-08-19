@@ -57,6 +57,14 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         #if os(iOS)
         webView.evaluateJavaScript("show('ios')")
+        if #available(iOS 14.0, *) {
+            SFSafariExtensionManager.getStateOfSafariExtension(withIdentifier: extensionBundleIdentifier) { (state, error) in
+                guard let state = state, error == nil else { return }
+                DispatchQueue.main.async {
+                    webView.evaluateJavaScript("show('ios', \(state.isEnabled))")
+                }
+            }
+        }
         #elseif os(macOS)
         webView.evaluateJavaScript("show('mac')")
 

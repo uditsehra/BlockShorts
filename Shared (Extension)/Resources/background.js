@@ -8,14 +8,32 @@ api.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 });
 
-// Move any installation logic strictly inside onInstalled
 api.runtime.onInstalled.addListener(() => {
     api.storage.local.get("blockShortsEnabled", (data) => {
         if (data.blockShortsEnabled === undefined) {
             api.storage.local.set({ blockShortsEnabled: true });
         }
+        syncRedirectRule(data.blockShortsEnabled !== false);
     });
 });
+
+// Keep the declarativeNetRequest redirect rule in sync with the toggle
+api.storage.onChanged.addListener((changes, area) => {
+    if (area === "local" && changes.blockShortsEnabled !== undefined) {
+        syncRedirectRule(changes.blockShortsEnabled.newValue !== false);
+    }
+});
+
+function syncRedirectRule(enabled) {
+    api.declarativeNetRequest.updateEnabledRulesets({
+        enableRulesetIds: enabled ? ["ruleset_redirect"] : [],
+        disableRulesetIds: enabled ? [] : ["ruleset_redirect"]
+    });
+}
+
+if (typeof module !== "undefined") {
+    module.exports = { updateStats };
+}
 
 async function updateStats(secondsToAdd) {
     try {
@@ -37,9 +55,11 @@ async function updateStats(secondsToAdd) {
                 dailyMinutes = 0;
             }
 
+            const prevDailyMinutes = dailyMinutes;
             dailyMinutes += (secondsToAdd / 60);
 
-            if (dailyMinutes >= 10 && data.lastUsedDate !== today) {
+            // Increment streak exactly once — when crossing the 10-min threshold for the day
+            if (dailyMinutes >= 10 && prevDailyMinutes < 10) {
                 currentStreak++;
             }
 
