@@ -12,7 +12,9 @@ style.textContent = `
     ytd-reel-video-renderer,
     ytd-shorts-lockup-view-model,
     a[href*="/shorts/"],
-    a[href="/shorts"] {
+    a[href^="/shorts"],
+    ytd-guide-entry-renderer:has(a[title="Shorts"]),
+    ytd-mini-guide-entry-renderer:has(a[title="Shorts"]) {
         display: none !important;
     }
 `;
@@ -49,6 +51,70 @@ function checkRedirect() {
 }
 window.addEventListener("yt-navigate-start", checkRedirect);
 window.addEventListener("yt-navigate-finish", checkRedirect);
+
+// 3b. SIDEBAR BUTTON — guide renders asynchronously; MutationObserver fires the
+//     instant the entry appears rather than relying on a fixed timeout.
+//     Returns true if any entry was found and hidden (used to disconnect observer).
+function hideSidebarShorts() {
+    let found = false;
+    document.querySelectorAll(
+        "ytd-guide-entry-renderer, ytd-mini-guide-entry-renderer, ytm-pivot-bar-item-renderer"
+    ).forEach(el => {
+        // title="Shorts" is the only stable identifier — href is Polymer-bound, not an attribute
+        if (el.querySelector('a[title="Shorts"]')) {
+            el.style.setProperty("display", "none", "important");
+            found = true;
+        }
+    });
+    return found;
+}
+
+let sidebarDebounce = null;
+const sidebarObserver = new MutationObserver(() => {
+    clearTimeout(sidebarDebounce);
+    sidebarDebounce = setTimeout(() => {
+        if (hideSidebarShorts()) sidebarObserver.disconnect();
+    }, 50);
+});
+// document.documentElement always exists at document_start
+sidebarObserver.observe(document.documentElement, { childList: true, subtree: true });
+
+// On SPA navigation the guide may re-render — reconnect observer if needed
+window.addEventListener("yt-navigate-finish", () => {
+    setTimeout(() => {
+        if (!hideSidebarShorts()) {
+            sidebarObserver.observe(document.documentElement, { childList: true, subtree: true });
+        }
+    }, 300);
+});
+
+// 3c. CLICK INTERCEPTOR — hard safety net; fires in capture phase before YouTube's
+//     own handlers. href attribute is often absent (Polymer binding), so check
+//     both the resolved href property and title="Shorts" as fallback
+document.addEventListener("click", (e) => {
+    const link = e.target.closest("a");
+    if (!link) return;
+    let isShorts = false;
+    try {
+        if (link.href) {
+            const url = new URL(link.href, location.origin);
+            isShorts = url.hostname.endsWith("youtube.com") && url.pathname.startsWith("/shorts");
+        }
+    } catch {}
+    if (!isShorts) isShorts = link.title === "Shorts";
+    if (isShorts) {
+        e.preventDefault();
+        e.stopPropagation();
+        let dest = "https://www.youtube.com/";
+        try {
+            const p = new URL(link.href, location.origin).pathname;
+            const id = p.split("/")[2];
+            if (id) dest = `/watch?v=${id}`;
+        } catch {}
+        window.location.replace(dest);
+        api.runtime.sendMessage({ type: "SHORTS_BLOCKED" }).catch(() => {});
+    }
+}, true);
 
 // 4. TIME TRACKING — visibilitychange captures partial minutes accurately;
 //    pageshow handles BFCache restoration; pagehide and 5-min interval are safety nets
