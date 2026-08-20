@@ -1,13 +1,14 @@
 const { test: base, chromium } = require('@playwright/test');
 const path = require('path');
 const os = require('os');
+const fs = require('fs');
 
 const extensionPath = path.resolve(__dirname, '../../Resources');
-// Persistent user data dir so Chrome remembers the extension across test runs
-const userDataDir = path.join(os.tmpdir(), 'blockshorts-e2e-profile');
 
 exports.test = base.extend({
     context: async ({}, use) => {
+        // Fresh profile per run — prevents stale extension state from breaking tests
+        const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'blockshorts-'));
         const context = await chromium.launchPersistentContext(userDataDir, {
             headless: false,
             args: [
@@ -17,6 +18,7 @@ exports.test = base.extend({
         });
         await use(context);
         await context.close();
+        fs.rmSync(userDataDir, { recursive: true, force: true });
     },
     page: async ({ context }, use) => {
         const page = await context.newPage();
